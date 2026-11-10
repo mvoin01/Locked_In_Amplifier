@@ -1,0 +1,23 @@
+* CD4053B Ron vs input voltage, VDD=10V, VSS=0, VEE set by .param VEEV
+* Open in LTspice (File > Open, file type *.cir) and Run.
+* Plot the expression:  -0.05/I(VX)   ->  Ron in ohms vs V(ax)
+.include CD4053B.lib
+
+VDD vdd 0 10
+VEE vee 0 {VEEV}
+.param VEEV=0
+* try .param VEEV=-5 for a +10/-5 V system
+VX  ax 0 5
+* hold AOUT 50 mV below AX, read current through VX
+BO  aout 0 V=V(ax)-0.05
+VSEL sela 0 0
+VINH inh 0 0
+
+* pins:  BY BX CY COUT CX INH VEE VSS SELC SELB SELA AX AY AOUT BOUT VDD
+XU1      0  0  0  0    0  inh vee 0   0    0    sela ax 0  aout 0    vdd CD4053B
+
+.dc VX {VEEV+0.05} 10 0.05
+.meas DC RON_MID FIND -0.05/I(VX) AT {(10+VEEV)/2}
+.meas DC RON_LOW FIND -0.05/I(VX) AT {VEEV+0.5}
+.meas DC RON_HIGH FIND -0.05/I(VX) AT 9.5
+.end

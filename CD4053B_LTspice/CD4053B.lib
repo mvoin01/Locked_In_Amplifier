@@ -1,0 +1,131 @@
+* =====================================================================
+*  CD4053B  -  Triple 2-channel CMOS analog multiplexer/demultiplexer
+*  Behavioural LTspice macromodel (NOT a TI-supplied model)
+*  Based on TI datasheet SCHS047 (CD4051B/CD4052B/CD4053B), 25 degC typ.
+*  Valid for VSS = 0 V, VDD = 3..18 V, VEE = 0 V or negative, VDD-VEE <= 18 V
+*  (absolute max VDD-VEE = 20 V is NOT enforced by the model).
+* ---------------------------------------------------------------------
+*  Node order = physical pin number (DIP/SOIC/TSSOP-16):
+*   1 BY    2 BX    3 CY    4 COUT  5 CX    6 INH   7 VEE   8 VSS
+*   9 SELC 10 SELB 11 SELA 12 AX   13 AY   14 AOUT 15 BOUT 16 VDD
+*
+*  Truth table (per datasheet Table 1):
+*   INH  SELx   ->  xOUT connected to
+*    0    0          xX  (ax / bx / cx)
+*    0    1          xY  (ay / by / cy)
+*    1    X          none (all switches OFF)
+*  Logic inputs swing VSS..VDD; analog signals may swing VEE..VDD.
+*
+*  What is modelled:
+*   - Ron vs signal voltage (peaks mid-supply, lower near rails)
+*   - Ron scaling with (VDD-VEE) supply
+*   - CMOS logic threshold at (VDD+VSS)/2
+*   - Address / inhibit to output propagation delay (pure delay)
+*   - OFF leakage, Cis, Cos, Cios feedthrough, logic input capacitance
+*   - ESD clamp diodes on all signal and logic pins
+*   - Quiescent supply current
+*  What is NOT modelled: temperature, Ron mismatch between channels,
+*  charge injection, supply-dependent delays, latch-up, breakdown.
+* =====================================================================
+.subckt CD4053B BY BX CY COUT CX INH VEE VSS SELC SELB SELA AX AY AOUT BOUT VDD
++ params: RON=180 RMOD=0.35 TADDR=160n TINH=160n
++ ROFF=100G CIS=5p COS=9p CIOS=0.2p CIN=5p IDDQ=40n
+
+* ---- On-resistance function -------------------------------------------
+* vm = mean switch terminal voltage above VEE, vs = VDD-VEE
+* Peak value = RON at vs=10 V; other supplies follow datasheet typicals
+* (5V:470, 10V:180, 15V:125 ohm), linearly interpolated, clamped outside 3..20 V.
+* Valid for any split: e.g. VDD=10/VEE=-5 uses the vs=15 V value.
+* Near the rails Ron falls to RON*(1-RMOD).
+.func rpk(vs) {RON/180*table(vs, 3,1100, 5,470, 10,180, 15,125, 18,112, 20,105)}
+.func uu(vm,vs) {min(((2*vm-vs)/max(vs,0.1))*((2*vm-vs)/max(vs,0.1)),1)}
+.func ronf(vm,vs) {rpk(vs)*(1-RMOD*uu(vm,vs))}
+
+* ---- Logic input decode (threshold = mid VDD-VSS, ~0.5 V wide) --------
+BdA darA VSS V=0.5*(1+tanh(4*(V(SELA,VSS)-0.5*V(VDD,VSS))))
+BdB darB VSS V=0.5*(1+tanh(4*(V(SELB,VSS)-0.5*V(VDD,VSS))))
+BdC darC VSS V=0.5*(1+tanh(4*(V(SELC,VSS)-0.5*V(VDD,VSS))))
+BdI darI VSS V=0.5*(1+tanh(4*(V(INH,VSS)-0.5*V(VDD,VSS))))
+
+* ---- Propagation delay: RC + re-threshold gives ~pure delay of T ------
+RdA darA dlA 1k
+CdA dlA VSS {TADDR/(0.693*1000)}
+RdB darB dlB 1k
+CdB dlB VSS {TADDR/(0.693*1000)}
+RdC darC dlC 1k
+CdC dlC VSS {TADDR/(0.693*1000)}
+RdI darI dlI 1k
+CdI dlI VSS {TINH/(0.693*1000)}
+
+BsA sA VSS V=0.5*(1+tanh(30*(V(dlA,VSS)-0.5)))
+BsB sB VSS V=0.5*(1+tanh(30*(V(dlB,VSS)-0.5)))
+BsC sC VSS V=0.5*(1+tanh(30*(V(dlC,VSS)-0.5)))
+BsI sI VSS V=0.5*(1+tanh(30*(V(dlI,VSS)-0.5)))
+
+* ---- Analog switches: I = (Vx - Vcom) * (enable/Ron + 1/ROFF) ---------
+BswAX AX AOUT I=V(AX,AOUT)*((1-V(sA,VSS))*(1-V(sI,VSS))/ronf(0.5*(V(AX,VEE)+V(AOUT,VEE)),V(VDD,VEE)) + 1/ROFF)
+BswAY AY AOUT I=V(AY,AOUT)*(V(sA,VSS)*(1-V(sI,VSS))/ronf(0.5*(V(AY,VEE)+V(AOUT,VEE)),V(VDD,VEE)) + 1/ROFF)
+BswBX BX BOUT I=V(BX,BOUT)*((1-V(sB,VSS))*(1-V(sI,VSS))/ronf(0.5*(V(BX,VEE)+V(BOUT,VEE)),V(VDD,VEE)) + 1/ROFF)
+BswBY BY BOUT I=V(BY,BOUT)*(V(sB,VSS)*(1-V(sI,VSS))/ronf(0.5*(V(BY,VEE)+V(BOUT,VEE)),V(VDD,VEE)) + 1/ROFF)
+BswCX CX COUT I=V(CX,COUT)*((1-V(sC,VSS))*(1-V(sI,VSS))/ronf(0.5*(V(CX,VEE)+V(COUT,VEE)),V(VDD,VEE)) + 1/ROFF)
+BswCY CY COUT I=V(CY,COUT)*(V(sC,VSS)*(1-V(sI,VSS))/ronf(0.5*(V(CY,VEE)+V(COUT,VEE)),V(VDD,VEE)) + 1/ROFF)
+
+* ---- Capacitances -----------------------------------------------------
+CiAX AX VSS {CIS}
+CiAY AY VSS {CIS}
+CiBX BX VSS {CIS}
+CiBY BY VSS {CIS}
+CiCX CX VSS {CIS}
+CiCY CY VSS {CIS}
+CoA AOUT VSS {COS}
+CoB BOUT VSS {COS}
+CoC COUT VSS {COS}
+CfAX AX AOUT {CIOS}
+CfAY AY AOUT {CIOS}
+CfBX BX BOUT {CIOS}
+CfBY BY BOUT {CIOS}
+CfCX CX COUT {CIOS}
+CfCY CY COUT {CIOS}
+CinA SELA VSS {CIN}
+CinB SELB VSS {CIN}
+CinC SELC VSS {CIN}
+CinI INH VSS {CIN}
+
+* ---- ESD / substrate clamp diodes ------------------------------------
+* Analog pins clamp to VDD and VEE
+DuAX AX VDD DESD
+DlAX VEE AX DESD
+DuAY AY VDD DESD
+DlAY VEE AY DESD
+DuBX BX VDD DESD
+DlBX VEE BX DESD
+DuBY BY VDD DESD
+DlBY VEE BY DESD
+DuCX CX VDD DESD
+DlCX VEE CX DESD
+DuCY CY VDD DESD
+DlCY VEE CY DESD
+DuAO AOUT VDD DESD
+DlAO VEE AOUT DESD
+DuBO BOUT VDD DESD
+DlBO VEE BOUT DESD
+DuCO COUT VDD DESD
+DlCO VEE COUT DESD
+* Logic pins clamp to VDD and VSS
+DuSA SELA VDD DESD
+DlSA VSS SELA DESD
+DuSB SELB VDD DESD
+DlSB VSS SELB DESD
+DuSC SELC VDD DESD
+DlSC VSS SELC DESD
+DuIN INH VDD DESD
+DlIN VSS INH DESD
+
+* ---- Supply ------------------------------------------------------------
+* Quiescent IDD (typ 0.04 uA at 10 V); small VSS-VEE leak keeps DC path
+IddQ VDD VSS {IDDQ}
+Rdd VDD VSS 1G
+Ree VSS VEE 1G
+
+.model DESD D(Is=1e-15 N=1 Rs=20 Cjo=0 BV=100)
+.ends CD4053B

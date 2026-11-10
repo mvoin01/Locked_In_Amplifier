@@ -1,0 +1,16 @@
+LTspice 26.1.1 for Windows
+Circuit: C:\Users\mvoin\Documents\LTspice\CD4053B_LTspice\CD4053B_bipolar_test.net
+Start Time: Tue Nov 10 15:17:41 2026
+solver = Normal
+Maximum thread count: 20
+tnom = 27
+temp = 27
+method = trap
+Direct Newton iteration succeeded in finding operating point.
+Total elapsed time: 0.549 seconds.
+Total iterations: 40605
+
+Files loaded:
+C:\Users\mvoin\Documents\LTspice\CD4053B_LTspice\CD4053B_bipolar_test.net
+C:\Users\mvoin\Documents\LTspice\CD4053B_LTspice\CD4053B.lib
+
