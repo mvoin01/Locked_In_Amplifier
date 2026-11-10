@@ -1,0 +1,130 @@
+*** MACROMODEL FOR MAX44251 ***
+* ----------------------------
+* Revision 1. 10/2011
+* Revision 2. 07/2012
+* ----------------------------
+*The MAX44251/MAX44252 are 20V, ultra-precision, lownoise,
+*low-drift amplifiers that offer near-zero DC offset
+*and drift through the use of patented autocorrelating
+*zeroing techniques.
+.subckt MAX44251 OUTA INA- INA+ VSS INB+ INB- OUTB VDD
+Xop1 OUTA VSS INA+ INA- VDD opamp
+Xop2 OUTB VSS INB+ INB- VDD opamp
+.ends
+*******************************************
+
+.SUBCKT opamp 201 18 17 15 10
+***************
+*INPUT STAGE
+VS1 10 11 0V
+GBIAS 11 12 304 100 179.25U
+M1 13 16 12 11 MOSFET
+M2 14 15 12 11 MOSFET
+DBIAS 18 12 DY
+VOS 17 16  3u
+RD1 13 18 1K
+RD2 14 18 1K
+C1 13 14 2P
+CIN1 16 100 10P
+CIN2 15 100 10P
+DIN1 16 11 DA
+DIN2 18 16 DA
+DIN3 15 11 DA
+DIN4 18 15 DA
+FSUP 18 10 VS1 1
+E103 103 18 10 18 1
+**************
+*INPUT BIAS CURRENT
+IBIAS1 18 17 -401.5P
+IBIAS2 18 15 -0.5P
+GBIAS1 17 18 10 18 1p
+GBIAS2 15 18 10 18 1p
+RID 15 16 1000G
+**************
+**************************************************
+*GAIN STAGE
+GA 25 100 14 13 51M
+RO1 25 100 2.95k
+GB 26 100 25 100 1410M
+RO2 26 100 1K
+EF 27 100 26 100 1
+CC 25 27 70P
+EF2 29 100 28 100 1
+GC 100 28 26 100 42.16M
+RO3 28 100 2.7K
+CC2 25 29 1800p
+RO4 28 30 20
+GCMPS 100 25 40 100 393.5U
+**************
+*CURRENT LIMIT
+DP3 26 38 DY
+EP3 38 100 10 18 185M
+DP4 39 26 DY
+EP4 100 39 10 18 185M
+**************
+*INTERNAL GND
+EG1 100 18 10 18 0.5
+**************
+*VOLTAGE LIMITING
+VS2 30 31 0V
+*****
+DP1 30 32 DY
+HP1 34 32 VS2 17.72
+EP1 34 36 10 18 0.5
+VOFF1 100 36 12M
+*****
+DP2 33 30 DY
+HP2 35 33 VS2 14.43
+EP2 37 35 10 18 0.5
+VOFF2 37 100 12.8M
+***************
+*CMRR
+RRR 40 100 1
+GCMR 40 100 12 18 50U
+GPSR 100 40 10 18 16U
+***************
+*SUPPLY CURRENT
+ISUP 10 18 -1.1m
+GSUP 10 18 10 18 -10u
+***************
+*FOR SHUTDOWN
+MEN1 171 172 31 10 MOSFETP
+MEN2 171 173 31 18 MOSFETN
+EEN3 170 172 304 100 10
+EEN4 173 170 304 100 10
+RSHUNT 170 171 10MEG
+VIS5 171 400 0V
+R171 171 18 100k
+D401 400 401 DY
+D402 402 400 DY
+D403 201 401 DY
+D404 402 201 DY
+I400 401 402 58m
+********************************
+RSH 103 18 500MEG
+ISH 18 103 10NA
+DSH 103 10 DY
+CSH 103 18 10P
+**************
+EEN2 300 100 103 18 1
+REN 300 301 10K
+VEN 301 302 0V
+EHYST 303 302 POLY(2) 10 18 304 100 0 0 0 0 0.4
+EEN1 303 100 10 100 0.7
+**************
+FEN1 100 304 VEN 12
+CEN 304 100 1P
+DEN1 100 304 DY
+DEN2 304 305 DY
+VLIM1 305 100 1V
+**************************************************
+.MODEL DA D(IS=100E-14 RS=0.5k)
+.MODEL MOSFET PMOS(VTO=-0.2 KP=29.3E-3 KF=32E-27 AF=0.8)
+.MODEL DX D(IS=100E-14)
+.MODEL DY D(IS=100E-14 N=1)
+.MODEL MOSFETP PMOS(VTO=-5.0  KP=88E-3 GAMMA=0.01)
+.MODEL MOSFETN NMOS(VTO=5  KP=88E-3 GAMMA=0.01)
+**************************************************
+.ENDS
+
+* Copyright (c) 2003-2012 Maxim Integrated Products.  All Rights Reserved.
