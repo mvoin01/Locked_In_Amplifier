@@ -1,6 +1,6 @@
 LTspice 26.1.1 for Windows
 Circuit: C:\Sandbox\Locked_In_Amplifier\CD4053B_bipolar_test.net
-Start Time: Wed Nov 11 16:40:29 2026
+Start Time: Thu Nov 12 16:10:03 2026
 solver = Normal
 Maximum thread count: 20
 tnom = 27
@@ -12,8 +12,8 @@ Gmin stepping failed to find operating point. Use".option gminsteps=0" to skip a
 Starting source stepping with srcstepmethod=0
 Source stepping succeeded in finding the operating point.
 
-Total elapsed time: 2.607 seconds.
-Total iterations: 45457
+Total elapsed time: 1.440 seconds.
+Total iterations: 6696
 
 Files loaded:
 C:\Sandbox\Locked_In_Amplifier\CD4053B_bipolar_test.net
